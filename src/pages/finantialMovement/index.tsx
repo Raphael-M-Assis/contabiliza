@@ -1,20 +1,15 @@
 import React, { useCallback, useState } from "react";
-import {
-  View,
-  TextInput,
-  ScrollView,
-  Button,
-  Text,
-  Pressable,
-  Switch,
-  SafeAreaView,
-} from "react-native";
+import { ScrollView, SafeAreaView } from "react-native";
 import styles from "./styles";
 import Navbar from "../../components/FinantialMovement/Navbar";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import Ionicons from "react-native-vector-icons/Ionicons";
 import { IFinantialMovement } from "../../@types/IFinantialMovement";
-import { RadioButton } from "react-native-paper";
+import { createMovementService } from "../../services/FinantialMovementServices";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "../../routes/RootStackParams";
+import { showToast } from "../../components/Toast";
+import Toast from "react-native-toast-message";
+import FormFinantialMovement from "../../components/FinantialMovement/FormFinantialMovement";
 
 const finantialMovementInitialValue: IFinantialMovement = {
   description: "",
@@ -24,37 +19,60 @@ const finantialMovementInitialValue: IFinantialMovement = {
   repeat: false,
 };
 
+type AuthScreenProp = StackNavigationProp<RootStackParamList, "finantialMovement">;
+
 const FinantialMovement = () => {
-  const [finantialMovement, setFinantialMovement] =
-    useState<IFinantialMovement>(finantialMovementInitialValue);
+  const navigation = useNavigation<AuthScreenProp>();
+
+  const [finantialMovement, setFinantialMovement] = useState<IFinantialMovement>(finantialMovementInitialValue);
   const [open, setOpen] = useState(false);
 
-  const handleSaveOnStorage = useCallback(() => {
-    alert("Salvo com sucesso");
+  const handleSaveOnStorage = useCallback(async (movement: IFinantialMovement) => {
+    if (!movement.description.trim()) {
+
+      const message = "Descrição é obrigatória" + movement.description;
+      return showToast("info", "Atenção", message);
+    }
+  
+    if (isNaN(movement.value) || movement.value <= 0) {
+      return showToast("info", "Atenção", "O valor deve ser maior que 0");
+    }
+
+    await createMovementService(movement);
+    setFinantialMovement(finantialMovementInitialValue);
+
+    navigation.navigate("home");
   }, []);
 
   const getIncomeBorderColor = () => {
-    if (finantialMovement.type === "income") {
-      return "#65d067";
-    }
-
-    return "#c5c0c9";
+    return finantialMovement.type === "income" ? "#65d067" : "#c5c0c9";
   };
 
   const getOutcomeBorderColor = () => {
-    if (finantialMovement.type === "outcome") {
-      return "#ff4b5c";
-    }
-
-    return "#c5c0c9";
+    return finantialMovement.type === "outcome" ? "#ff4b5c" : "#c5c0c9";
   };
 
   const handleQuantityChange = (text: string) => {
+    let newValue = finantialMovement.value.toString().replace(".", "");
+  
+    if (text === "Backspace") {
+      newValue = newValue.slice(0, newValue.length - 1);
+    } else {
+      newValue = newValue + text;
+    }
+  
     setFinantialMovement({
       ...finantialMovement,
-      value: Number(text),
+      value: newValue ? parseFloat(newValue) / 100 : 0,
     });
   };
+
+  const formatQuantityValue = () => {
+    return finantialMovement.value.toLocaleString("pt-br", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
 
   const handleChangeRepeat = () => {
     if (finantialMovement.repeat) {
@@ -74,10 +92,6 @@ const FinantialMovement = () => {
     }
   }
 
-  const formatDate = (date: Date) => {
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <Navbar />
@@ -90,138 +104,21 @@ const FinantialMovement = () => {
           alignItems: "center",
         }}
       >
-        <TextInput
-          style={styles.input}
-          placeholder="Descrição"
-          value={finantialMovement.description}
-          onChangeText={(e) => {
-            setFinantialMovement({
-              ...finantialMovement,
-              description: e,
-            });
-          }}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Valor"
-          keyboardType="numeric"
-          value={finantialMovement.value.toString()}
-          onChangeText={handleQuantityChange}
-        />
-        <Pressable style={styles.inputDate} onPress={() => setOpen(true)}>
-          <Text style={styles.textDate}>
-            {formatDate(finantialMovement.date)}
-          </Text>
-        </Pressable>
-
-        {open && (
-          <DateTimePicker
-            value={finantialMovement.date}
-            mode="date"
-            display="default"
-            onChange={(_, selectedDate) => {
-              setOpen(false);
-              if (selectedDate) {
-                setFinantialMovement({
-                  ...finantialMovement,
-                  date: selectedDate,
-                });
-              }
-            }}
+        <FormFinantialMovement 
+          finantialMovement={finantialMovement} 
+          setFinantialMovement={setFinantialMovement} 
+          handleSaveOnStorage={handleSaveOnStorage} 
+          formatQuantityValue={formatQuantityValue}
+          handleQuantityChange={handleQuantityChange}
+          handleChangeRepeat={handleChangeRepeat}
+          getIncomeBorderColor={getIncomeBorderColor}
+          getOutcomeBorderColor={getOutcomeBorderColor}
+          open={open}
+          setOpen={setOpen}
           />
-        )}
-
-        <View style={styles.typeContainer}>
-          <Pressable
-            onPress={() =>
-              setFinantialMovement({ ...finantialMovement, type: "income" })
-            }
-            style={[
-              styles.incomeButton,
-              { borderColor: getIncomeBorderColor() },
-            ]}
-          >
-            <View style={styles.arrowUp}>
-              <Ionicons name="arrow-up" size={20} />
-            </View>
-            <Text>Receita</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() =>
-              setFinantialMovement({ ...finantialMovement, type: "outcome" })
-            }
-            style={[
-              styles.outcomeButton,
-              { borderColor: getOutcomeBorderColor() },
-            ]}
-          >
-            <View style={styles.arrowDown}>
-              <Ionicons name="arrow-down" size={20} />
-            </View>
-            <Text>Despesa</Text>
-          </Pressable>
-        </View>
-        <View style={styles.repeatContainer}>
-          <Text style={styles.repeatText}>Repetir</Text>
-          <Switch 
-            onChange={handleChangeRepeat} 
-            value={finantialMovement.repeat} 
-            thumbColor={finantialMovement.repeat ? "#175560" : "#777"}
-            style={styles.switch}
-          />
-
-        </View>
-        {finantialMovement.repeat && (
-          <View style={styles.repeatNumberContainer}>
-            <View style={styles.choiceContainer}>
-              <Text style={styles.choiceText}>Fixo</Text>
-              <View style={styles.radioButtonContainer}>
-                <RadioButton
-                  value="fixo"
-                  status={ finantialMovement.allMonths ? 'checked' : 'unchecked' }
-                  onPress={() => setFinantialMovement({...finantialMovement, allMonths: true})}
-                  color="#175560"
-                />
-              </View>
-            </View>
-            
-            <View style={styles.choiceContainer}>
-              <Text style={styles.choiceText}>Parcelado</Text>
-              <View style={styles.radioButtonContainer}>
-                <RadioButton 
-                  value="parcelado"
-                  status={ !finantialMovement.allMonths ? 'checked' : 'unchecked' }
-                  onPress={() => setFinantialMovement({...finantialMovement, allMonths: false})}
-                  color="#175560"
-                />
-              </View>
-            </View>
-          </View>
-        )}
-
-        {finantialMovement.repeat && !finantialMovement.allMonths && (
-          <View style={styles.repeatNumberContainer}>
-            <TextInput
-              placeholder="Quantidade de vezes"
-              style={styles.inputQuantity}
-              keyboardType="numeric"
-              value={finantialMovement.repeatTimes?.toString() === '0' ? '' : finantialMovement.repeatTimes?.toString()}
-              onChangeText={(e) => {
-                setFinantialMovement({
-                  ...finantialMovement,
-                  repeatTimes: Number(e),
-                });
-              }}
-            />
-          </View>
-        )}
-
-        <Pressable style={styles.saveButton} onPress={handleSaveOnStorage}>
-          <Text style={styles.saveText}>Salvar</Text>
-        </Pressable>
       </ScrollView>
+
+      <Toast />
     </SafeAreaView>
   );
 };
