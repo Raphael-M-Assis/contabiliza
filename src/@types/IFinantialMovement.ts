@@ -4,6 +4,7 @@ export type IFinantialMovement = {
   date: Date;
   type: "income" | "outcome";
   repeat: boolean;
+  allMonths?: boolean;
   fixedRepeat?: boolean;
   repeatTimes?: number;
 };

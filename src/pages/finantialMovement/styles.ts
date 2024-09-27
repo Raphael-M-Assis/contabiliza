@@ -75,11 +75,45 @@ export default StyleSheet.create({
     width: "90%",
   },
   repeatText: {
+    marginTop: 10,
     fontSize: 17,
+  },
+  repeatNumberContainer: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    gap: 10,
+    width: "90%",
+  },
+  choiceContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  radioButtonContainer: {
+    transform: [{ scale: 1.5 }],
+  },
+  choiceText: {
+    fontSize: 17,
+  },
+  switch: {
+    transform: [{ scaleX: 1.5 }, { scaleY: 1.5 }],
+  },
+  inputQuantity: {
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    marginTop: 5,
+    borderRadius: 5,
+    width: "100%",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   saveButton: {
     backgroundColor: "#175560",
     padding: 10,
+    marginTop: 10,
     borderRadius: 5,
     width: "90%",
     alignItems: "center",

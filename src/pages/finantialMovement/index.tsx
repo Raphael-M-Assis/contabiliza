@@ -7,12 +7,14 @@ import {
   Text,
   Pressable,
   Switch,
+  SafeAreaView,
 } from "react-native";
 import styles from "./styles";
 import Navbar from "../../components/FinantialMovement/Navbar";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { IFinantialMovement } from "../../@types/IFinantialMovement";
+import { RadioButton } from "react-native-paper";
 
 const finantialMovementInitialValue: IFinantialMovement = {
   description: "",
@@ -54,12 +56,30 @@ const FinantialMovement = () => {
     });
   };
 
+  const handleChangeRepeat = () => {
+    if (finantialMovement.repeat) {
+      setFinantialMovement({
+        ...finantialMovement,
+        repeat: false,
+        allMonths: false,
+        repeatTimes: 0,
+      });
+    } else {
+      setFinantialMovement({
+        ...finantialMovement,
+        repeat: true,
+        allMonths: true,
+        repeatTimes: 0,
+      });
+    }
+  }
+
   const formatDate = (date: Date) => {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Navbar />
 
       <ScrollView
@@ -145,13 +165,64 @@ const FinantialMovement = () => {
         </View>
         <View style={styles.repeatContainer}>
           <Text style={styles.repeatText}>Repetir</Text>
-          <Switch />
+          <Switch 
+            onChange={handleChangeRepeat} 
+            value={finantialMovement.repeat} 
+            thumbColor={finantialMovement.repeat ? "#175560" : "#777"}
+            style={styles.switch}
+          />
+
         </View>
+        {finantialMovement.repeat && (
+          <View style={styles.repeatNumberContainer}>
+            <View style={styles.choiceContainer}>
+              <Text style={styles.choiceText}>Fixo</Text>
+              <View style={styles.radioButtonContainer}>
+                <RadioButton
+                  value="fixo"
+                  status={ finantialMovement.allMonths ? 'checked' : 'unchecked' }
+                  onPress={() => setFinantialMovement({...finantialMovement, allMonths: true})}
+                  color="#175560"
+                />
+              </View>
+            </View>
+            
+            <View style={styles.choiceContainer}>
+              <Text style={styles.choiceText}>Parcelado</Text>
+              <View style={styles.radioButtonContainer}>
+                <RadioButton 
+                  value="parcelado"
+                  status={ !finantialMovement.allMonths ? 'checked' : 'unchecked' }
+                  onPress={() => setFinantialMovement({...finantialMovement, allMonths: false})}
+                  color="#175560"
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {finantialMovement.repeat && !finantialMovement.allMonths && (
+          <View style={styles.repeatNumberContainer}>
+            <TextInput
+              placeholder="Quantidade de vezes"
+              style={styles.inputQuantity}
+              keyboardType="numeric"
+              value={finantialMovement.repeatTimes?.toString() === '0' ? '' : finantialMovement.repeatTimes?.toString()}
+              onChangeText={(e) => {
+                setFinantialMovement({
+                  ...finantialMovement,
+                  repeatTimes: Number(e),
+                });
+              }}
+            />
+          </View>
+        )}
+
         <Pressable style={styles.saveButton} onPress={handleSaveOnStorage}>
           <Text style={styles.saveText}>Salvar</Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
